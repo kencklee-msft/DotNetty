@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using DotNetty.Codecs.CoapTcp.util;
+    using DotNetty.Buffers;
 
     public class MessageOption
     {
@@ -37,9 +37,8 @@
         };
 
         public const byte END_OF_OPTIONS = 0xFF;
-
-        private static Dictionary<int, DataType> OPTION_NUMBER_TO_OPTION_DATA_TYPE =
-            new Dictionary<int, DataType>() {
+        private static Dictionary<uint, DataType> OPTION_NUMBER_TO_OPTION_DATA_TYPE =
+            new Dictionary<uint, DataType>() {
                 {0 /* reserved */, DataType.EMPTY},
                 {1 /* if-match */, DataType.OPAQUE},
                 {3 /* uri-host */, DataType.STRING},
@@ -62,90 +61,22 @@
                 {136 /* reserved */, DataType.EMPTY},
                 {140 /* reserved */, DataType.EMPTY}
             };
-        private static Dictionary<int, Name> OPTION_NUMBER_TO_OPTION_NAME =
-            new Dictionary<int, Name>() { 
-                {1, Name.If_Match},
-                {3, Name.Uri_Host},
-                {4, Name.ETag},
-                {5, Name.If_None_Match},
-                {6, Name.Observe},
-                {7, Name.Uri_Port},
-                {8, Name.Location_Path},
-                {11, Name.Uri_Path},
-                {12, Name.Content_Format},
-                {14, Name.Max_Age},
-                {15, Name.Uri_Query},
-                {17, Name.Accept},
-                {20, Name.Location_Query},
-                {35, Name.Proxy_Uri},
-                {39, Name.Proxy_Scheme},
-                {60, Name.Size1}
-            };
 
-        public int OptionNumber { get { return optionNumber; } }
-        public int OptionLength { get { return optionLength; } }
-        public byte[] Payload { get { return payload; } }
+        public uint OptionNumber { get { return optionNumber; } }
+        public uint OptionLength { get { return optionLength; } }
+        public IByteBuffer Payload { get { return payload; } }
         public Name OptionName { get { return GetName(optionNumber); } }
-        public DataType OptionType { get { return GetType(optionNumber); } }
+        public DataType OptionDataType { get { return GetOptionDataType(optionNumber); } }
 
-        private int optionNumber;
-        private int optionLength;
-        private byte[] payload;
+        private uint optionNumber;
+        private uint optionLength;
+        private IByteBuffer payload;
 
-        private MessageOption(int optionNumber, int optionLength, byte[] payload)
+        private MessageOption(uint optionNumber, uint optionLength, IByteBuffer payload)
         {
             this.optionNumber = optionNumber;
             this.optionLength = optionLength;
             this.payload = payload;
-        }
-
-        public int GetIntValue()
-        {
-            DataType type = GetType(optionNumber);
-            if (type == DataType.UINT)
-            {
-                return BytesUtil.ToInt(payload, Math.Min(optionLength, 4), IntegerEncoding.NETWORK_ORDER);
-            }
-            throw new ArgumentException("the payload is not of integer type; optionNumber: "
-                + optionNumber + "; expected payload type: " + type.ToString());
-        }
-
-        public byte[] GetBytes()
-        {
-            DataType type = GetType(optionNumber);
-            if (type == DataType.OPAQUE)
-            {
-                return payload;
-            }
-            throw new ArgumentException("the payload is not of opaque type; optionNumber: "
-                + optionNumber + "; expected payload type: " + type.ToString());
-        }
-
-        public string GetString()
-        {
-            DataType type = GetType(optionNumber);
-            if (type == DataType.STRING)
-            {
-                return BytesUtil.ToUTF8String(payload, payload.Length);
-            }
-            throw new ArgumentException("the payload is not of string type; optionNumber: "
-                + optionNumber + "; expected payload type: " + type.ToString());
-        }
-
-        public byte[] ToByteArray(int previousOptionNumber = 0)
-        {
-            Tuple<byte, int, int> encodedDelta = VariableLengthIntegerCodec.Encode(optionNumber - previousOptionNumber);
-            Tuple<byte, int, int> encodedLength = VariableLengthIntegerCodec.Encode(optionLength);
-
-            // the first byte is composed of 4-bit delta
-            byte optionHeader = (byte)((encodedDelta.Item1 + encodedLength.Item1 << 4));
-
-            BytesBuilder builder = BytesBuilder.Create();
-            return builder.AddByte(optionHeader)
-                .AddInt(encodedDelta.Item2, encodedDelta.Item3, IntegerEncoding.NETWORK_ORDER)
-                .AddInt(encodedLength.Item2, encodedLength.Item3, IntegerEncoding.NETWORK_ORDER)
-                .AddBytes(payload, payload.Length)
-                .Build();
         }
 
         public override bool Equals(Object obj)
@@ -159,32 +90,30 @@
             return
                 OptionNumber == messageOption.optionNumber &&
                 OptionLength == messageOption.OptionLength &&
-                Payload.SequenceEqual(messageOption.Payload);
+                ByteBufferUtil.Equals(Payload, messageOption.Payload);
         }
 
-        public override int GetHashCode()
-        {
-            int baseHashCode = base.GetHashCode();
-            int payload0 = Payload.Length > 0 ? Payload[0] : 0;
-            return baseHashCode + OptionNumber + OptionLength + Payload[0];
-        }
-
-        public static MessageOption Create(int optionNumber, int optionLength, byte[] payload)
+        public static MessageOption Create(uint optionNumber, uint optionLength, IByteBuffer payload)
         {
             return new MessageOption(optionNumber, optionLength, payload);
         }
 
-        public static Name GetName(int optionNumber)
+        public static Name GetName(uint optionNumber)
         {
-            Name name = Name.Reserved;
-            OPTION_NUMBER_TO_OPTION_NAME.TryGetValue(optionNumber, out name);
-            return name;
+            if (!Enum.IsDefined(typeof(Name), (int)optionNumber))
+            {
+                return Name.Reserved;
+            }
+            return (Name)optionNumber;
         }
 
-        public static DataType GetType(int optionNumber)
+        public static DataType GetOptionDataType(uint optionNumber)
         {
-            DataType type = DataType.EMPTY;
-            OPTION_NUMBER_TO_OPTION_DATA_TYPE.TryGetValue(optionNumber, out type);
+            DataType type = DataType.OPAQUE;
+            if (!OPTION_NUMBER_TO_OPTION_DATA_TYPE.TryGetValue(optionNumber, out type))
+            {
+                return DataType.OPAQUE;
+            }
             return type;
         }
     }

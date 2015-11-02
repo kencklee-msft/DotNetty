@@ -1,21 +1,20 @@
 ﻿namespace DotNetty.Codecs.CoapTcp.Tests
 {
     using System.Collections.Generic;
-    using DotNetty.Codecs.CoapTcp.util;
     using Xunit;
 
     public class MessageOptionTests
     {
         [Theory]
         [InlineData(1,100)]
-        public void OptionNameTest(int start, int end)
+        public void OptionNameTest(uint start, uint end)
         {
-            for (int optionNumber = start; optionNumber <= end; optionNumber++)
+            for (uint optionNumber = start; optionNumber <= end; optionNumber++)
             {
                 MessageOption.Name name = MessageOption.GetName(optionNumber);
                 if (0 != name)
                 {
-                    Assert.Equal(optionNumber, (int)name);
+                    Assert.Equal(optionNumber, (uint)name);
                 }
             }
         }
@@ -27,9 +26,9 @@
         [InlineData(14)]
         [InlineData(17)]
         [InlineData(60)]
-        public void UintOptionDataTypeTest(int optionNumber)
+        public void UintOptionDataTypeTest(uint optionNumber)
         {
-            MessageOption.DataType type = MessageOption.GetType(optionNumber);
+            MessageOption.DataType type = MessageOption.GetOptionDataType(optionNumber);
             Assert.Equal(type, MessageOption.DataType.UINT);
         }
 
@@ -41,26 +40,26 @@
         [InlineData(20)]
         [InlineData(35)]
         [InlineData(39)]
-        public void StringOptionDataTypeTest(int optionNumber)
+        public void StringOptionDataTypeTest(uint optionNumber)
         {
-            MessageOption.DataType type = MessageOption.GetType(optionNumber);
+            MessageOption.DataType type = MessageOption.GetOptionDataType(optionNumber);
             Assert.Equal(type, MessageOption.DataType.STRING);
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
-        public void OpaqueOptionDataTypeTest(int optionNumber)
+        public void OpaqueOptionDataTypeTest(uint optionNumber)
         {
-            MessageOption.DataType type = MessageOption.GetType(optionNumber);
+            MessageOption.DataType type = MessageOption.GetOptionDataType(optionNumber);
             Assert.Equal(type, MessageOption.DataType.OPAQUE);
         }
 
         [Theory]
         [InlineData(5)]
-        public void EmptyOptionDataTypeTest(int optionNumber)
+        public void EmptyOptionDataTypeTest(uint optionNumber)
         {
-            MessageOption.DataType type = MessageOption.GetType(optionNumber);
+            MessageOption.DataType type = MessageOption.GetOptionDataType(optionNumber);
             Assert.Equal(type, MessageOption.DataType.EMPTY);
         }
     }

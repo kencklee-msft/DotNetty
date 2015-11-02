@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using DotNetty.Buffers;
     using System.Linq;
 
     public abstract class Message
@@ -12,18 +13,18 @@
         public byte Version { get { return version; } }
         public byte Type { get { return type; } }
         public byte Code { get { return code; } }
-        public byte[] Token { get { return token; } }
+        public IByteBuffer Token { get { return token; } }
         public List<MessageOption> Options { get { return options; } }
-        public byte[] Payload { get { return payload; } }
+        public IByteBuffer Payload { get { return payload; } }
 
         protected byte version;
         protected byte type;
         protected byte code;
-        protected byte[] token;
+        protected IByteBuffer token;
         protected List<MessageOption> options;
-        protected byte[] payload;
+        protected IByteBuffer payload;
 
-        protected Message(byte version, byte type, byte code, byte[] token, List<MessageOption> options, byte[] payload)
+        protected Message(byte version, byte type, byte code, IByteBuffer token, List<MessageOption> options, IByteBuffer payload)
         {
             this.version = version;
             this.type = type;
@@ -33,7 +34,7 @@
             this.payload = payload;
         }
 
-        protected Message(byte type, byte code, byte[] token, List<MessageOption> options, byte[] payload) :
+        protected Message(byte type, byte code, IByteBuffer token, List<MessageOption> options, IByteBuffer payload) :
             this(DEFAULT_VERSION, type, code, token, options, payload)
         { }
 
@@ -55,6 +56,19 @@
             throw new ArgumentException("undefined request/response type for code:" + code);
         }
 
+        public override int GetHashCode()
+        {
+            // valid token is only 0-8 byte length
+            // we left-shift individual i-th token byte i bit and XOR them
+            int hashCode = 0;
+            for (int i=0; i<Math.Min(Token.ReadableBytes,8); i++)
+            {
+                hashCode ^= Token.GetByte(i) << i;
+            }
+            // finally, we include code that differentitate types of requests and responses
+            return hashCode + Code << 24;
+        }
+
         public override bool Equals(object obj)
         {
             if (null == obj || GetType() != obj.GetType())
@@ -66,30 +80,9 @@
             return (Version == message.Version &&
                 Type == message.Type &&
                 Code == message.Code &&
-                Token.SequenceEqual(message.Token) &&
-                TokenEquals(message.Options) &&
-                Payload.SequenceEqual(message.Payload));
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode() + Type << 24 + Code << 16;
-        }
-
-        private bool TokenEquals(List<MessageOption> options)
-        {
-            if (Options.Count != options.Count)
-            {
-                return false;
-            }
-            for (int i = 0; i < Options.Count; i++)
-            {
-                if (!Options[i].Equals(options[i]))
-                {
-                    return false;
-                }
-            }
-            return true;
+                ByteBufferUtil.Equals(Token, message.Token) &&
+                Options.ToArray().SequenceEqual(message.Options.ToArray()) &&
+                ByteBufferUtil.Equals(Payload, message.Payload));
         }
     }
 }

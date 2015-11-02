@@ -38,6 +38,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Moq, Version=4.2.1510.2205, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Moq.4.2.1510.2205\lib\net40\Moq.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="xunit.abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
       <HintPath>..\..\packages\xunit.abstractions.2.0.0\lib\net35\xunit.abstractions.dll</HintPath>
@@ -64,24 +68,39 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
-    <Compile Include="blbt\BLBTL1CodecTests.cs" />
-    <Compile Include="blbt\BLBTMessageTests.cs" />
-    <Compile Include="blbt\OptionsBytesBuildHelperTests.cs" />
+    <Compile Include="DecoderTests.cs" />
+    <Compile Include="EncoderTests.cs" />
+    <Compile Include="MessageOptionDecoderTests.cs" />
+    <Compile Include="MessageOptionEncoderTests.cs" />
     <Compile Include="MessageOptionTestHelper.cs" />
     <Compile Include="MessageOptionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="util\BytesBuilderTests.cs" />
-    <Compile Include="util\BytesReaderTests.cs" />
-    <Compile Include="util\BytesUtilTests.cs" />
-    <Compile Include="util\VariableLengthIntegerCodecTests.cs" />
+    <Compile Include="util\UintDecoderTests.cs" />
+    <Compile Include="util\UintEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\DotNetty.Buffers\DotNetty.Buffers.csproj">
+      <Project>{5de3c557-48bf-4cdb-9f47-474d343dd841}</Project>
+      <Name>DotNetty.Buffers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\DotNetty.Codecs.CoapTcp\DotNetty.Codecs.CoapTcp.csproj">
       <Project>{b638a646-ac46-49b1-a569-46145786a8eb}</Project>
       <Name>DotNetty.Codecs.CoapTcp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\DotNetty.Codecs\DotNetty.Codecs.csproj">
+      <Project>{2abd244e-ef8f-460d-9c30-39116499e6e4}</Project>
+      <Name>DotNetty.Codecs</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\DotNetty.Common\DotNetty.Common.csproj">
+      <Project>{DE58FE41-5E99-44E5-86BC-FC9ED8761DAF}</Project>
+      <Name>DotNetty.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\DotNetty.Transport\DotNetty.Transport.csproj">
+      <Project>{8218C9EE-0A4A-432F-A12A-B54202F97B05}</Project>
+      <Name>DotNetty.Transport</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />
